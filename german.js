@@ -39,21 +39,23 @@ function splitEventText(eventText) {
  * @throws {Error} - If there is an error fetching data from Wikipedia.
  */
 export async function OnThisDay(input, langPlugin = null) {
-    try {
-      
-  
-      let match;
-      let SETTINGS = {
+   let SETTINGS = {
        regex:/^(\b(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\b) (\d{1,2})$/,
-       regex_match:"{match2}._{match1}",
+       regex_match:"{day}._{month}",
        lang:"de",
-       months:['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-       event_sections:[6,8], 
+       months:['January', 'February', 'March', 'April', 'May', 'June', 'Juli', 'August', 'September', 'October', 'November', 'December'],
+       event_sections:[1,9], 
        birth_sections:[6,8],
        death_sections:[6,8],
        error:`Error fetching events from Wikipedia. {error}`
       }
+        
+  
+  try {
       
+  
+      let match;
+     
       
       if(langPlugin){
         SETTINGS = langPlugin
@@ -68,9 +70,9 @@ export async function OnThisDay(input, langPlugin = null) {
                 throw new Error('Invalid input. Please provide a valid month and day (e.g., "July 16").');
             }
             if (match) {
-              SETTINGS.regex_match = SETTINGS.regex_match.replace("{match1}", match[1])
+              SETTINGS.regex_match = SETTINGS.regex_match.replace("{month}", match[1])
               
-                SETTINGS.regex_match = SETTINGS.regex_match.replace("{match2}", match[2])
+                SETTINGS.regex_match = SETTINGS.regex_match.replace("{day}", match[2])
               
                 input = `${SETTINGS.regex_match}`
             }
@@ -88,14 +90,24 @@ export async function OnThisDay(input, langPlugin = null) {
 
         /// Date input was provided - setting date to current date.     
         if (!input) {
-            input = `${getMonth()} ${date.getDate()}`
+          SETTINGS.regex_match = SETTINGS.regex_match.replace("{month}", getMonth())
+              
+                SETTINGS.regex_match = SETTINGS.regex_match.replace("{day}", date.getDate() )
+              
+                input = `${SETTINGS.regex_match}`
+          
+         
         }
 
 
         const doc = await wtf.fetch(input, SETTINGS.lang);
 
-        const sections = doc.sections();
-
+        const sections = doc?.sections();
+        console.log(sections)
+       if(!sections){
+         throw new Error("Nothing found for provided date.")
+       }
+        
         const data = {
             date: doc.title(),
             events: [],
@@ -150,6 +162,6 @@ export async function OnThisDay(input, langPlugin = null) {
         throw new Error(SETTINGS.error);
     }
 }
-let tt = await OnThisDay("Januar 29")
+let tt = await OnThisDay("Juli 23")
 console.log(tt)
 // Notes to self - section counts are different so is parsing uses : instead of - in events. 
