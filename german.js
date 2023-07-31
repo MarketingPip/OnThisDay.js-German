@@ -38,17 +38,41 @@ function splitEventText(eventText) {
  * @returns {Promise<{getEvents: Function, getBirths: Function, getDeaths: Function, getEvents: string[], getBirths: string[], getDeaths: string[], getAll: string[]}>} - A Promise that resolves to an object containing data and methods to retrieve specific data.
  * @throws {Error} - If there is an error fetching data from Wikipedia.
  */
-export async function OnThisDay(input) {
+export async function OnThisDay(input, langPlugin = null) {
     try {
+      
+  
+      let match;
+      let SETTINGS = {
+       regex:/^(\b(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\b) (\d{1,2})$/,
+       regex_match:"{match2}._{match1}",
+       lang:"de",
+       months:['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+       event_sections:[6,8], 
+       birth_sections:[6,8],
+       death_sections:[6,8],
+       error:`Error fetching events from Wikipedia. {error}`
+      }
+      
+      
+      if(langPlugin){
+        SETTINGS = langPlugin
+      }
+      
+      
         /// If input was provided - set date.    
         if (input) {
-            const regex = /^(\b(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\b) (\d{1,2})$/
-            const match = input.match(regex);
+            const regex = SETTINGS.regex
+             match = input.match(regex);
             if (!match) {
                 throw new Error('Invalid input. Please provide a valid month and day (e.g., "July 16").');
             }
             if (match) {
-                input = `${match[2]}._${match[1]}`
+              SETTINGS.regex_match = SETTINGS.regex_match.replace("{match1}", match[1])
+              
+                SETTINGS.regex_match = SETTINGS.regex_match.replace("{match2}", match[2])
+              
+                input = `${SETTINGS.regex_match}`
             }
         }
 
@@ -57,7 +81,7 @@ export async function OnThisDay(input) {
         let date = new Date();
 
         function getMonth() {
-            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            const months = SETTINGS.months;
             return months[date.getMonth()];
         }
 
@@ -68,8 +92,8 @@ export async function OnThisDay(input) {
         }
 
 
-        const doc = await wtf.fetch(input, "de");
-console.log(doc)
+        const doc = await wtf.fetch(input, SETTINGS.lang);
+
         const sections = doc.sections();
 
         const data = {
@@ -110,18 +134,22 @@ console.log(doc)
          * Returns an object containing data and methods to retrieve specific data.
          * @type {GetDataMethods & {events: string[], births: string[], deaths: string[], all: string[]}}
          */
+      
+     
+      
         const getDataMethods = {
             getEvents: () => data.events,
             getBirths: () => data.births,
             getDeaths: () => data.deaths,
-            getAll: () => data,
+            getAll: () => data
         };
 
         return Object.assign(getDataMethods, data);
     } catch (err) {
-        throw new Error(`Error fetching events from Wikipedia. ${err.message}`);
+      SETTINGS.error =  SETTINGS.error.replace("{error}", err.message) 
+        throw new Error(SETTINGS.error);
     }
 }
-console.log(await OnThisDay("Januar 29"))
-
+let tt = await OnThisDay("Januar 29")
+console.log(tt)
 // Notes to self - section counts are different so is parsing uses : instead of - in events. 
