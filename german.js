@@ -57,10 +57,12 @@ import wtf from "https://cdn.skypack.dev/wtf_wikipedia@10.1.5";
  */
 function splitEventText(eventText, regPattern) {
     eventText = eventText.replace(/\s+/g, ' ').trim();
+ 
     const regex = regPattern
     const match = eventText.match(regex);
 
-    if (match) {
+    if (match && parseInt(match[1])) {
+      
         const year = parseInt(match[1]);
         const event = match[2].trim();
         return {
@@ -79,7 +81,7 @@ function splitEventText(eventText, regPattern) {
  * @returns {Promise<{getEvents: Function, getBirths: Function, getDeaths: Function, getEvents: string[], getBirths: string[], getDeaths: string[], getAll: string[]}>} - A Promise that resolves to an object containing data and methods to retrieve specific data.
  * @throws {Error} - If there is an error fetching data from Wikipedia.
  */
-export async function OnThisDay(input, langPlugin = null) {
+export async function OnThisDay(input = null, langPlugin = null) {
    let SETTINGS = {
   regex:/^(\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\b) (\d{1,2})$/,
        parsing_regex:/^(?:\* )?(\d{1}|\d{2}|\d{3}|\d{4}) – (.*)$/,
@@ -153,10 +155,10 @@ export async function OnThisDay(input, langPlugin = null) {
         }
 
 
-        const doc = await wtf.fetch(input, SETTINGS.lang);
+        let doc = await wtf.fetch(input, SETTINGS.lang);
 
-        const sections = doc?.sections();
-        console.log(sections)
+        let sections = doc?.sections();
+       
        if(!sections){
          throw new Error("Nothing found for provided date.")
        }
@@ -171,20 +173,97 @@ export async function OnThisDay(input, langPlugin = null) {
 
         /// GET EVENTS
         for (let i = parseInt(SETTINGS.event_sections[0]); i <= parseInt(SETTINGS.event_sections[1]); i++) {
-            const sectionText = sections[i].text().trim();
-           data.events.push(...sectionText.split('\n').map((event) => splitEventText(event, SETTINGS.parsing_regex)).filter(Boolean));
+          const sectionText = sections[i]?.text()?.trim();
+         data.events.push(...sectionText.split('\n').map((event) => splitEventText(event, SETTINGS.parsing_regex)).filter(Boolean));
         }
 
+    
+    
+    let parsing_regex = SETTINGS.parsing_regex  
+    
+          if(SETTINGS.born_on_page){
+        
+            if(match){
+           SETTINGS.born_on_page = SETTINGS.born_on_page.replace("{month}", match[1])
+              
+                SETTINGS.born_on_page = SETTINGS.born_on_page.replace("{day}", match[2] )
+           }
+    
+               if(!match){
+                     SETTINGS.born_on_page= SETTINGS.born_on_page.replace("{month}", getMonth())
+              
+                SETTINGS.born_on_page = SETTINGS.born_on_page.replace("{day}", date.getDate() )  
+                }
+            
+            
+              doc = await wtf.fetch(SETTINGS.born_on_page, SETTINGS.lang);
+
+       sections = doc?.sections();
+            
+     
+       if(SETTINGS.born_on_page_regex){
+        SETTINGS.parsing_regex = SETTINGS.born_on_page_regex 
+       }     
+      
+       if(!sections){
+         throw new Error("Nothing found for born on page.")
+       }
+                  
+      }
+    
         /// GET BIRTHS 
-        for (let i = 6; i <= 8; i++) {
-            const sectionText = sections[i].text().trim();
-           // data.births.push(...sectionText.split('\n').map((event) => splitEventText(event, SETTINGS.parsing_regex)).filter(Boolean));
+        for (let i = parseInt(SETTINGS.birth_sections[0]); i <=  parseInt(SETTINGS.birth_sections[1]); i++) {
+         
+           const sectionText = sections[i]?.text()?.trim();
+          if(sectionText){
+         data.births.push(...sectionText.split('\n').map((event) => splitEventText(event, SETTINGS.parsing_regex)).filter(Boolean));
+          }
         }
 
+    
+    
+    
+    
+    
+              if(SETTINGS.death_page){
+        
+                if(match){
+           SETTINGS.death_page = SETTINGS.death_page.replace("{month}", match[1])
+              
+                SETTINGS.death_page = SETTINGS.death_page.replace("{day}", match[2] )
+                }    
+                
+                if(!match){
+                     SETTINGS.death_page = SETTINGS.death_page.replace("{month}", getMonth())
+              
+                SETTINGS.death_page = SETTINGS.death_page.replace("{day}", date.getDate() )  
+                }
+        
+              doc = await wtf.fetch(SETTINGS.death_page, SETTINGS.lang);
+
+       sections = doc?.sections();
+       
+       if(!sections){
+         throw new Error("Nothing found for deaths page.")
+       }
+                
+         // Revert to default parsing regex pattern.       
+         SETTINGS.parsing_regex = parsing_regex       
+       
+             if(SETTINGS.death_page_regex){
+        SETTINGS.parsing_regex = SETTINGS.death_page_regex
+       }             
+                
+      }
+    
+    
+    
         /// GET DEATHS 
-        for (let i = 10; i <= 12; i++) {
-            const sectionText = sections[i].text().trim();
-            //data.deaths.push(...sectionText.split('\n').map((event) => splitEventText(event, SETTINGS.parsing_regex)).filter(Boolean));
+        for (let i = parseInt(SETTINGS.death_sections[0]); i <= parseInt(SETTINGS.death_sections[1]); i++) {
+          const sectionText = sections[i]?.text()?.trim();
+           if(sectionText){
+           data.deaths.push(...sectionText.split('\n').map((event) => splitEventText(event, SETTINGS.parsing_regex)).filter(Boolean));
+           }
         }
 
         /**
@@ -215,26 +294,30 @@ export async function OnThisDay(input, langPlugin = null) {
         throw new Error(SETTINGS.error);
     }
 }
-
+//
 
 let SETTINGS = {
-  regex:/^(\b(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\b) (\d{1,2})$/,
-      parsing_regex: /^(?:\* )?(.*):(.*)$/,
-       regex_match:"{day}._{month}",
-       lang:"de",
-       months:['January', 'February', 'March', 'April', 'May', 'June', 'Juli', 'August', 'September', 'October', 'November', 'December'],
-       event_sections:[1,9], 
-       birth_sections:[1,9],
-       death_sections:[1,9],
-       error_msgs:{fetch:`Error fetching events from Wikipedia. {error}`,
-                   invalid_input:`Invalid input. Please provide a valid month and day (e.g., "July 16").`,
-                   nothing_found:"Nothing found for provided date.",
+  regex:/^(\b(?:Januar|Februar|marzo|April|Mai|Juni|Juli|agosto|September|Oktober|November|dicembre)\b) (\d{1,2})$/,
+      parsing_regex: /(?:\* )?(.*) – (.*)/,
+       regex_match:"{day}_{month}",
+       lang:"it",
+       months:['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'],
+       event_sections:[0,1], 
+       birth_sections:[0,8],
+       death_sections:[0,15],
+    born_on_page: "Nati_il_{day}_{month}",
+    born_on_page_regex:  /^(?:\* )?(.*) - (.*)$/,
+  death_page: "Morti_il_{day}_{month}",
+ death_page_regex:  /^(?:\* )?(.*) - (.*)$/, 
+       error_msgs:{fetch:`Errore durante il recupero degli eventi da: {error}`,
+                   invalid_input:`Inserimento non valido. Fornisci un mese e un giorno validi (ad es. "luglio 16")`,
+                   nothing_found:"Non è stato trovato nulla per le date fornite.",
                   }
       }
 
 try{
-let tt = await OnThisDay("Juli 23", SETTINGS)
-console.log(tt)
+let tt = await OnThisDay("dicembre 25", SETTINGS)
+console.log(tt.getDeaths())
 }catch(error){
   console.log(error.message)
 }
