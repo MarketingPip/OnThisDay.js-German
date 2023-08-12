@@ -27,7 +27,7 @@ function validateInput(input, SETTINGS) {
   const sectionsKeys = ["event_sections", "birth_sections", "death_sections"];
   sectionsKeys.forEach((key) => {
     const sections = input[key];
-    if (!Array.isArray(sections) || sections.length !== 2 || !sections.every((item) => typeof item === "number")) {
+    if (typeof sections != "string") {
       throw new Error(`Invalid ${key}. It should be an array with exactly two numbers.`);
     }
   });
@@ -171,10 +171,26 @@ export async function OnThisDay(input = null, langPlugin = null) {
         };
 
 
+      const historySectionIndex = doc.sections().findIndex((section) =>
+      section._title.toLowerCase().includes(SETTINGS.event_sections)
+    );
+
+    
+        const historySection = doc.sections()[historySectionIndex];
+   
+    let text = []
+  
+text.push(historySection.text())
+
+    for (let i = 0; i <= historySection.children().length; i++) {   if(historySection.children()[i]?.text()){
+     text.push(historySection.children()[i]?.text())
+    }
+   }
+  
         /// GET EVENTS
-        for (let i = parseInt(SETTINGS.event_sections[0]); i <= parseInt(SETTINGS.event_sections[1]); i++) {
-          const sectionText = sections[i]?.text()?.trim();
-         data.events.push(...sectionText.split('\n').map((event) => splitEventText(event, SETTINGS.parsing_regex)).filter(Boolean));
+        for (let i in text) {
+          const sectionText = text[i]
+         data.events.push(...text[i].split('\n').map((event) => splitEventText(event, SETTINGS.parsing_regex)).filter(Boolean));
         }
 
     
@@ -302,9 +318,9 @@ let SETTINGS = {
        regex_match:"{day}_{month}",
        lang:"it",
        months:['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'],
-       event_sections:[0,1], 
-       birth_sections:[0,8],
-       death_sections:[0,15],
+       event_sections:"eventi", 
+       birth_sections:"Null",
+       death_sections:"Null",
     born_on_page: "Nati_il_{day}_{month}",
     born_on_page_regex:  /^(?:\* )?(.*) - (.*)$/,
   death_page: "Morti_il_{day}_{month}",
@@ -317,7 +333,7 @@ let SETTINGS = {
 
 try{
 let tt = await OnThisDay("dicembre 25", SETTINGS)
-console.log(tt.getDeaths())
+console.log(tt.getEvents())
 }catch(error){
   console.log(error.message)
 }
