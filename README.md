@@ -87,18 +87,6 @@ try {
 | `timeout` | `10000` | Request timeout in milliseconds                                        |
 
 
-## Supported Languages
-
-| Code | Language | Code | Language   | Code | Language  |
-| ---- | -------- | ---- | ---------- | ---- | --------- |
-| `en` | English  | `pt` | Portuguese | `tr` | Turkish   |
-| `es` | Spanish  | `sv` | Swedish    | `cs` | Czech     |
-| `de` | German   | `ru` | Russian    | `uk` | Ukrainian |
-| `fr` | French   | `ar` | Arabic     |      |           |
-| `zh` | Chinese  |      |            |      |           |
-
-
-
 ## Contributing ![GitHub](https://img.shields.io/github/contributors/MarketingPipeline/OnThisDay.js)
 
 Want to improve this? Create a pull request with detailed changes. If approved you will be added to the list of contributors.
