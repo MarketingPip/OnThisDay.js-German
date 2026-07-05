@@ -51,62 +51,33 @@ try {
 } catch (error) {
     console.log(error.message)
 }
+
+// With options
+const result = await OnThisDay(7, 4, {
+  lang: 'de',       // see supported languages below
+  timeout: 5000     // milliseconds
+});
+
 ```
 
-## API Reference
+## Options
 
-### `OnThisDay(month?, day?, options?)`
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `month` | `number \| {month, day}` | today | 1–12 |
-| `day` | `number` | today | 1–31 (validated per month) |
-| `options.type` | `string` | `'all'` | `'all'`, `'events'`, `'births'`, `'deaths'`, `'holidays'`, `'selected'` |
-| `options.lang` | `string` | `'en'` | Supported language code |
-| `options.timeout` | `number` | `10000` | Request timeout in ms |
-
-### Return value
-
-```js
-{
-  getEvents:   () => [{ year: 1776, event: '...' }, ...],
-  getBirths:   () => [...],
-  getDeaths:   () => [...],
-  getHolidays: () => [...],
-  getSelected: () => [...],
-  getAll:      () => { events, births, deaths, holidays, selected },
-  getRaw:      () => { events, births, deaths, holidays, selected }, // full Wikimedia shape
-
-  // Direct access (normalized)
-  events:   [...],
-  births:   [...],
-  deaths:   [...],
-  holidays: [...],
-  selected: [...]
-}
-```
-
-All getters return **copies** — mutating them won't affect the result object.
+| Option    | Default | Description                                                            |
+| --------- | ------- | ---------------------------------------------------------------------- |
+| `lang`    | `'en'`  | `en`, `es`, `de`, `fr`, `zh`, `ru`, `ar`, `pt`, `sv`, `tr`, `cs`, `uk` |
+| `timeout` | `10000` | Request timeout in milliseconds                                        |
 
 
 ## Supported Languages
 
-| Code | Language |
-|------|----------|
-| `en` | English |
-| `es` | Spanish |
-| `de` | German |
-| `fr` | French |
-| `zh` | Chinese |
-| `ru` | Russian |
-| `ar` | Arabic |
-| `pt` | Portuguese |
-| `sv` | Swedish |
-| `tr` | Turkish |
-| `cs` | Czech |
-| `uk` | Ukrainian |
+| Code | Language | Code | Language   | Code | Language  |
+| ---- | -------- | ---- | ---------- | ---- | --------- |
+| `en` | English  | `pt` | Portuguese | `tr` | Turkish   |
+| `es` | Spanish  | `sv` | Swedish    | `cs` | Czech     |
+| `de` | German   | `ru` | Russian    | `uk` | Ukrainian |
+| `fr` | French   | `ar` | Arabic     |      |           |
+| `zh` | Chinese  |      |            |      |           |
 
-Unsupported languages throw immediately - no wasted network calls.
 
 
 ## Contributing ![GitHub](https://img.shields.io/github/contributors/MarketingPipeline/OnThisDay.js)
