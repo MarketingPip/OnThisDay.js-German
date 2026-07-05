@@ -41,7 +41,7 @@ try {
 
 // Fetch events, births, and deaths that happened on the current date.
 try {
-    let onToday = await OnThisDay()
+    const onToday = await OnThisDay()
     console.log('All Data:', onToday.getAll());
     console.log('Births:', onToday.getBirths());
     console.log('Deaths:', onToday.getDeaths());
@@ -53,11 +53,14 @@ try {
 }
 
 // With options
-const result = await OnThisDay(7, 4, {
-  lang: 'de',       // see supported languages below
-  timeout: 5000     // milliseconds
-});
-
+try {
+    const withOptions = await OnThisDay(7, 4, {
+      lang: 'de',       // see supported languages below
+      timeout: 5000     // milliseconds
+    });
+} catch (error) {
+    console.log(error.message)
+}
 ```
 
 ## Options
