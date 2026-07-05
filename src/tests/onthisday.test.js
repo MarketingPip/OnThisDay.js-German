@@ -7,7 +7,7 @@ import {
   normalize,
   packageRaw,
   OnThisDay
-} from '../OnThisDay.js';
+} from '../onthisday.js';
 import {
   july4All,
   july4Events,
