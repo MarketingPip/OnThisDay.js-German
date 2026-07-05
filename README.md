@@ -15,7 +15,7 @@
    </p>  
 
 
-OnThisDay.js is a zero-dependency JavaScript library for fetching historical events, births, deaths, and holidays from the [Wikimedia REST API](https://api.wikimedia.org/wiki/Feed_API/On_this_day). It works in Node.js and modern browsers.
+OnThisDay.js is a zero-dependency JavaScript library for fetching historical events, births, deaths, and holidays from the [Wikimedia REST API](https://api.wikimedia.org/wiki/Feed_API/On_this_day). It works in Node.js 18+ and modern browsers.
 
 
 ## Example and usage
