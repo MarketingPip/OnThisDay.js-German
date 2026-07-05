@@ -7,7 +7,7 @@ import {
   normalize,
   packageRaw,
   OnThisDay
-} from './OnThisDay.js';
+} from './onthisday.js';
 
 // ── Mock Helpers ──────────────────────────────────────────────
 
