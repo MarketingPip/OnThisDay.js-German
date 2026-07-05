@@ -1,160 +1,185 @@
 /**!
  * @license OnThisDay.js - A JavaScript library to find out what events happened today or any day in history.
- * VERSION: 1.0.1
+ * VERSION: 3.0.0
  * CREATED BY: Jared Van Valkengoed
  * LICENSED UNDER MIT LICENSE
  * MORE INFO CAN BE FOUND AT https://github.com/MarketingPipeline/OnThisDay.js/
  */
 
+const API_BASE = 'https://api.wikimedia.org/feed/v1/wikipedia';
+const VALID_TYPES = ['all', 'events', 'births', 'deaths', 'holidays', 'selected'];
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-import wtf from "https://cdn.skypack.dev/wtf_wikipedia@10.1.5";
-
-/**
- * Split the event text and remove any bracketed content.
- * @param {string} text - The event text to split.
- * @returns {string} - The cleaned event text.
- */
-function splitEventText(eventText) {
-    eventText = eventText.replace(/\s+/g, ' ').trim();
-    const regex = /^(?:\* )?(\d{1}|\d{2}|\d{3}|\d{4}) – (.*)$/;
-    const match = eventText.match(regex);
-
-    if (match) {
-        const year = parseInt(match[1]);
-        const event = match[2].trim();
-        return {
-            year,
-            event
-        };
-    } else {
-        return null; // Invalid format, return null or handle error accordingly
-    }
+export function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
 }
 
-
-/**
- * Fetches data from Wikipedia for the specified date.
- * @param {string} input - The date to find events for. If not provided will return by default events for current date.
- * @returns {Promise<{getEvents: Function, getBirths: Function, getDeaths: Function, getEvents: string[], getBirths: string[], getDeaths: string[], getAll: string[]}>} - A Promise that resolves to an object containing data and methods to retrieve specific data.
- * @throws {Error} - If there is an error fetching data from Wikipedia.
- */
-export async function OnThisDay(input, langPlugin = null) {
-  
-   let SETTINGS = {
-       regex:/^(\b(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\b) (\d{1,2})$/,
-       regex_match:"{match1} {match2}",
-       lang:"en",
-       months:['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-       event_sections:[6,8], 
-       birth_sections:[6,8],
-       death_sections:[6,8],
-       invalid_input_error:'Invalid input. Please provide a valid month and day (e.g., "July 16").',
-       error:`Error fetching events from Wikipedia. {error}`
-      }
-      
-  
-    try {
-      
-  
-      let match;
-     
-      
-      if(langPlugin){
-        SETTINGS = langPlugin
-      }
-      
-      
-        /// If input was provided - set date.    
-        if (input) {
-            const regex = SETTINGS.regex
-             match = input.match(regex);
-            if (!match) {
-                throw new Error(SETTINGS.invalid_input_error);
-            }
-            if (match) {
-              SETTINGS.regex_match = SETTINGS.regex_match.replace("{match1}", match[1])
-              
-                SETTINGS.regex_match = SETTINGS.regex_match.replace("{match2}", match[2])
-              
-                input = `${SETTINGS.regex_match}`
-            }
-        }
-
-
-        /// GET DATE IF NONE PROVIDED
-        let date = new Date();
-
-        function getMonth() {
-            const months = SETTINGS.months;
-            return months[date.getMonth()];
-        }
-
-
-        /// Date input was provided - setting date to current date.     
-        if (!input) {
-            input = `${getMonth()} ${date.getDate()}`
-        }
-
-
-        const doc = await wtf.fetch(input, SETTINGS.lang);
-
-        const sections = doc.sections();
-
-        const data = {
-            date: doc.title(),
-            events: [],
-            births: [],
-            deaths: []
-        };
-
-
-        /// GET EVENTS
-        for (let i = 2; i <= 4; i++) {
-            const sectionText = sections[i].text().trim();
-          console.log(sectionText)
-            data.events.push(...sectionText.split('\n').map(splitEventText));
-        }
-
-        /// GET BIRTHS 
-        for (let i = 6; i <= 8; i++) {
-            const sectionText = sections[i].text().trim();
-            data.births.push(...sectionText.split('\n').map(splitEventText));
-        }
-
-        /// GET DEATHS 
-        for (let i = 10; i <= 12; i++) {
-            const sectionText = sections[i].text().trim();
-            data.deaths.push(...sectionText.split('\n').map(splitEventText));
-        }
-
-        /**
-         * @typedef {Object} GetDataMethods
-         * @property {Function} getEvents - Returns the array of event data.
-         * @property {Function} getBirths - Returns the array of birth data.
-         * @property {Function} getDeaths - Returns the array of death data.
-         * @property {Function} getAll - Returns the array of event, birth & death data.
-         */
-
-        /**
-         * Returns an object containing data and methods to retrieve specific data.
-         * @type {GetDataMethods & {events: string[], births: string[], deaths: string[], all: string[]}}
-         */
-      
-     
-      
-        const getDataMethods = {
-            getEvents: () => data.events,
-            getBirths: () => data.births,
-            getDeaths: () => data.deaths,
-            getAll: () => data
-        };
-
-        return Object.assign(getDataMethods, data);
-    } catch (err) {
-      SETTINGS.error =  SETTINGS.error.replace("{error}", err.message) 
-        throw new Error(SETTINGS.error);
-    }
+export function getDaysInMonth(month, year) {
+  if (month === 2 && isLeapYear(year)) return 29;
+  return DAYS_IN_MONTH[month - 1];
 }
-let tt = await OnThisDay()
-console.log(tt)
-// Notes to self - section counts are different so is parsing uses : instead of - in events. 
+
+function pad(n) {
+  return String(n).padStart(2, '0');
+}
+
+function resolveArgs(a, b, c) {
+  let month, day, options;
+
+  if (a == null) {
+    const now = new Date();
+    month = now.getMonth() + 1;
+    day = now.getDate();
+    options = b || {};
+  } else if (typeof a === 'object') {
+    month = a.month;
+    day = a.day;
+    options = b || {};
+  } else {
+    month = a;
+    day = b;
+    options = c || {};
+  }
+
+  month = Number(month);
+  day = Number(day);
+
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error(`Invalid month: ${month}. Must be an integer between 1 and 12.`);
+  }
+  if (!Number.isInteger(day) || day < 1 || day > 31) {
+    throw new Error(`Invalid day: ${day}. Must be an integer between 1 and 31.`);
+  }
+
+  const year = options.year ?? new Date().getFullYear();
+  const maxDays = getDaysInMonth(month, year);
+  if (day > maxDays) {
+    throw new Error(`Invalid date: ${month}/${day}. Month ${month} only has ${maxDays} days in ${year}.`);
+  }
+
+  const lang = options.lang ?? 'en';
+  if (typeof lang !== 'string' || lang.length < 2) {
+    throw new Error(`Invalid language code: "${lang}". Must be a valid Wikipedia language code.`);
+  }
+
+  return {
+    month: pad(month),
+    day: pad(day),
+    lang,
+    type: options.type || 'all',
+    timeout: options.timeout ?? 10000
+  };
+}
+
+export function normalizeItem(item) {
+  if (!item || typeof item !== 'object') {
+    return { year: null, event: '' };
+  }
+  return {
+    year: item.year ?? null,
+    event: item.text ?? item.event ?? ''
+  };
+}
+
+export function normalize(data, type) {
+  const base = { events: [], births: [], deaths: [], holidays: [], selected: [] };
+  if (type !== 'all') {
+    base[type] = (Array.isArray(data) ? data : []).map(normalizeItem);
+    return base;
+  }
+  const d = typeof data === 'object' && data !== null ? data : {};
+  return {
+    events:   (d.events   || []).map(normalizeItem),
+    births:   (d.births   || []).map(normalizeItem),
+    deaths:   (d.deaths   || []).map(normalizeItem),
+    holidays: (d.holidays || []).map(normalizeItem),
+    selected: (d.selected || []).map(normalizeItem)
+  };
+}
+
+export function packageRaw(data, type) {
+  const base = { events: [], births: [], deaths: [], holidays: [], selected: [] };
+  if (type !== 'all') {
+    base[type] = Array.isArray(data) ? data : [];
+    return base;
+  }
+  const d = typeof data === 'object' && data !== null ? data : {};
+  return {
+    events:   d.events   || [],
+    births:   d.births   || [],
+    deaths:   d.deaths   || [],
+    holidays: d.holidays || [],
+    selected: d.selected || []
+  };
+}
+
+export async function OnThisDay(a, b, c) {
+  const { month, day, lang, type, timeout } = resolveArgs(a, b, c);
+
+  if (!VALID_TYPES.includes(type)) {
+    throw new Error(`Invalid type "${type}". Valid: ${VALID_TYPES.join(', ')}`);
+  }
+
+  const url = `${API_BASE}/${encodeURIComponent(lang)}/onthisday/${encodeURIComponent(type)}/${month}/${day}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  let res;
+  try {
+    res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'OnThisDay.js/4.1.0 (https://github.com/MarketingPipeline/OnThisDay.js)'
+      }
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error(`Request timed out after ${timeout}ms.`);
+    }
+    throw new Error(`Network error: ${err.message}`);
+  }
+  clearTimeout(timeoutId);
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(`No data found for ${month}/${day} in language "${lang}".`);
+    }
+    throw new Error(`Wikimedia API error ${res.status}: ${res.statusText}`);
+  }
+
+  let raw;
+  try {
+    raw = await res.json();
+  } catch (err) {
+    throw new Error(`Invalid JSON response: ${err.message}`);
+  }
+
+  const normalized = normalize(raw, type);
+  const rawStore = packageRaw(raw, type);
+
+  return {
+    getEvents:   () => [...normalized.events],
+    getBirths:   () => [...normalized.births],
+    getDeaths:   () => [...normalized.deaths],
+    getHolidays: () => [...normalized.holidays],
+    getSelected: () => [...normalized.selected],
+    getAll:      () => ({
+      events:   [...normalized.events],
+      births:   [...normalized.births],
+      deaths:   [...normalized.deaths],
+      holidays: [...normalized.holidays],
+      selected: [...normalized.selected]
+    }),
+    getRaw:      () => ({
+      events:   [...rawStore.events],
+      births:   [...rawStore.births],
+      deaths:   [...rawStore.deaths],
+      holidays: [...rawStore.holidays],
+      selected: [...rawStore.selected]
+    }),
+    ...normalized
+  };
+}
