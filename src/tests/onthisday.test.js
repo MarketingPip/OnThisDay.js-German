@@ -354,11 +354,18 @@ describe('OnThisDay() Integration', () => {
     );
   });
 
-  it('throws on 404 language', async () => {
+  it('throws on unsupported language before fetch', async () => {
+    await assert.rejects(
+      async () => OnThisDay(7, 4, { lang: 'ja', type: 'events' }),
+      /Unsupported language/
+    );
+  });
+
+  it('throws on API 404', async () => {
     mockFetchError(404, 'Not Found');
 
     await assert.rejects(
-      async () => OnThisDay(7, 4, { lang: 'xx', type: 'events' }),
+      async () => OnThisDay(7, 4, { lang: 'en', type: 'events' }),
       /No data found/
     );
   });
