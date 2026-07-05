@@ -5,10 +5,13 @@
   "description": "A JavaScript library for fetching historical events from Wikipedia.",
   "main": "dist/onthisday.min.js",
   "files": [
-    "dist"
+    "OnThisDay.js",
+    "OnThisDay.test.js",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "test": "echo \"No tests specified\" && exit 0",
+    "test": "node --test dist/onthisday.test.js",
     "start": "node dist/onthisday.min.js"
   },
   "keywords": [
