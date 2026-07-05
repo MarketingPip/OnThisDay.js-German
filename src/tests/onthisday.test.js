@@ -1,19 +1,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
-import {
-  isLeapYear,
-  getDaysInMonth,
-  normalizeItem,
-  normalize,
-  packageRaw,
-  OnThisDay
-} from '../onthisday.js';
-import {
-  july4All,
-  july4Events,
-  missingFields,
-  emptyResponse
-} from './fixtures.js';
+import { normalizeItem, normalize, packageRaw, OnThisDay } from '../onthisday.js';
+import { july4All, missingFields, emptyResponse } from './fixtures.js';
 
 function mockFetch(response) {
   global.fetch = typeof response === 'function'
@@ -46,6 +34,17 @@ describe('normalizeItem()', () => {
     assert.deepStrictEqual(normalizeItem({ text: 'X' }), { year: null, event: 'X' });
   });
 
+  it('handles year = 0', () => {
+    assert.deepStrictEqual(normalizeItem({ year: 0, text: 'Year zero' }), { year: 0, event: 'Year zero' });
+  });
+
+  it('handles unicode text', () => {
+    assert.deepStrictEqual(
+      normalizeItem({ year: 1789, text: 'Révolution française 🗼' }),
+      { year: 1789, event: 'Révolution française 🗼' }
+    );
+  });
+
   it('is idempotent', () => {
     const once = normalizeItem({ year: 2000, text: 'Event' });
     const twice = normalizeItem(once);
@@ -67,32 +66,29 @@ describe('normalizeItem()', () => {
 
 describe('normalize()', () => {
   it('normalizes all types', () => {
-    const r = normalize(july4All, 'all');
+    const r = normalize(july4All);
     assert.deepStrictEqual(r.events[0], { year: 1776, event: july4All.events[0].text });
     assert.deepStrictEqual(r.births[0], { year: 1872, event: july4All.births[0].text });
+    assert.deepStrictEqual(r.deaths[0], { year: 1826, event: july4All.deaths[0].text });
     assert.deepStrictEqual(r.holidays[0], { year: null, event: july4All.holidays[0].text });
-  });
-
-  it('normalizes single type', () => {
-    const r = normalize(july4Events, 'events');
-    assert.strictEqual(r.events.length, 1);
-    assert.deepStrictEqual(r.births, []);
+    assert.deepStrictEqual(r.selected[0], { year: 1776, event: july4All.selected[0].text });
   });
 
   it('handles null data', () => {
-    const r = normalize(null, 'events');
+    const r = normalize(null);
     assert.deepStrictEqual(r.events, []);
+    assert.deepStrictEqual(r.births, []);
   });
 
   it('handles mixed valid + invalid items', () => {
-    const r = normalize(missingFields, 'all');
+    const r = normalize(missingFields);
     assert.strictEqual(r.events.length, 6);
     assert.ok(r.events.every(e => typeof e.event === 'string'));
   });
 
   it('is idempotent', () => {
     const input = { events: [{ year: 2000, text: 'Event' }] };
-    assert.deepStrictEqual(normalize(input, 'all'), normalize(normalize(input, 'all'), 'all'));
+    assert.deepStrictEqual(normalize(input), normalize(normalize(input)));
   });
 });
 
@@ -100,15 +96,14 @@ describe('normalize()', () => {
 
 describe('packageRaw()', () => {
   it('packages all', () => {
-    const r = packageRaw(july4All, 'all');
+    const r = packageRaw(july4All);
     assert.strictEqual(r.events.length, 2);
     assert.strictEqual(r.births.length, 1);
   });
 
-  it('packages single type', () => {
-    const r = packageRaw(july4Events, 'events');
-    assert.strictEqual(r.events.length, 1);
-    assert.deepStrictEqual(r.births, []);
+  it('handles null data', () => {
+    const r = packageRaw(null);
+    assert.deepStrictEqual(r.events, []);
   });
 });
 
@@ -136,8 +131,13 @@ describe('OnThisDay() input validation', () => {
     assert.ok(r);
   });
 
+  it('coerces string numbers', async () => {
+    const r = await OnThisDay('7', '4');
+    assert.ok(r);
+  });
+
   it('with options', async () => {
-    const r = await OnThisDay(7, 4, { type: 'births', lang: 'es', timeout: 5000 });
+    const r = await OnThisDay(7, 4, { lang: 'es', timeout: 5000 });
     assert.ok(r);
   });
 
@@ -160,16 +160,22 @@ describe('OnThisDay() input validation', () => {
     await assert.rejects(async () => OnThisDay(4, 31), /Invalid date/);
   });
 
+  it('accepts Jan 1', async () => {
+    const r = await OnThisDay(1, 1);
+    assert.ok(r);
+  });
+
+  it('accepts Dec 31', async () => {
+    const r = await OnThisDay(12, 31);
+    assert.ok(r);
+  });
+
   it('throws on unsupported lang', async () => {
     await assert.rejects(async () => OnThisDay(7, 4, { lang: 'ja' }), /Unsupported language/);
   });
 
   it('throws on empty lang', async () => {
     await assert.rejects(async () => OnThisDay(7, 4, { lang: '' }), /Unsupported language/);
-  });
-
-  it('throws on invalid type', async () => {
-    await assert.rejects(async () => OnThisDay(7, 4, { type: 'foo' }), /Invalid type/);
   });
 });
 
@@ -186,27 +192,22 @@ describe('OnThisDay() integration', () => {
     global.fetch = originalFetch;
   });
 
-  it('fetches all', async () => {
+  it('fetches all types', async () => {
     mockFetch(july4All);
     const r = await OnThisDay(7, 4);
     assert.strictEqual(r.getEvents().length, 2);
     assert.strictEqual(r.getBirths().length, 1);
     assert.strictEqual(r.getDeaths().length, 2);
+    assert.strictEqual(r.getHolidays().length, 1);
+    assert.strictEqual(r.getSelected().length, 1);
   });
 
-  it('fetches single type', async () => {
-    mockFetch(july4Events);
-    const r = await OnThisDay(7, 4, { type: 'events' });
-    assert.strictEqual(r.getEvents().length, 1);
-    assert.deepStrictEqual(r.getBirths(), []);
-  });
-
-  it('asserts URL', async () => {
+  it('asserts URL uses /all/', async () => {
     let url;
     mockFetch(u => { url = u; return { ok: true, status: 200, statusText: 'OK', json: async () => [] }; });
-    await OnThisDay(7, 4, { type: 'events', lang: 'es' });
+    await OnThisDay(7, 4, { lang: 'es' });
     assert.ok(url.includes('/es/'));
-    assert.ok(url.includes('/events/'));
+    assert.ok(url.includes('/all/'));
     assert.ok(url.includes('/07/04'));
   });
 
@@ -244,12 +245,12 @@ describe('OnThisDay() integration', () => {
   });
 
   it('getters are immutable', async () => {
-    mockFetch(july4Events);
-    const r = await OnThisDay(7, 4, { type: 'events' });
+    mockFetch(july4All);
+    const r = await OnThisDay(7, 4);
     r.getEvents().push({ hack: true });
-    assert.strictEqual(r.getEvents().length, 1);
+    assert.strictEqual(r.getEvents().length, 2);
     r.getAll().events.push({ hack: true });
-    assert.strictEqual(r.getAll().events.length, 1);
+    assert.strictEqual(r.getAll().events.length, 2);
   });
 
   it('handles concurrency', async () => {
@@ -261,9 +262,7 @@ describe('OnThisDay() integration', () => {
   });
 
   it('handles large dataset', async () => {
-    mockFetch({
-      events: Array.from({ length: 1000 }, (_, i) => ({ year: i, text: `E${i}` }))
-    });
+    mockFetch({ events: Array.from({ length: 1000 }, (_, i) => ({ year: i, text: `E${i}` })) });
     const r = await OnThisDay(7, 4);
     assert.strictEqual(r.getEvents().length, 1000);
     assert.strictEqual(r.getEvents()[999].year, 999);
