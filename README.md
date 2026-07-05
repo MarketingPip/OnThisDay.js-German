@@ -15,7 +15,8 @@
    </p>  
 
 
-OnThisDay.js is a JavaScript library for fetching events on specific dates from Wikipedia. It allows you to retrieve historical events, births, and deaths that occurred on the current or a particular date.
+OnThisDay.js is a zero-dependency JavaScript library for fetching historical events, births, deaths, and holidays from the [Wikimedia REST API](https://api.wikimedia.org/wiki/Feed_API/On_this_day). It works in Node.js and modern browsers.
+
 
 ## Example and usage
 
@@ -26,11 +27,14 @@ import { OnThisDay } from 'https://cdn.jsdelivr.net/gh/MarketingPipeline/OnThisD
 
 // Fetch events, births, and deaths for a specific date
 try {
-    let onDate = await OnThisDay('July 4')
-    console.log('All Data:', onDate.getAll());
-    console.log('Births:', onDate.getBirths());
-    console.log('Deaths:', onDate.getDeaths());
-    console.log('Events:', onDate.getEvents());
+    const result = await OnThisDay(7, 4);
+    
+    console.log(result.getEvents());   // historical events
+    console.log(result.getBirths());   // famous births
+    console.log(result.getDeaths());   // notable deaths
+    console.log(result.getHolidays()); // holidays & observances
+    console.log(result.getSelected()); // editor's picks
+    console.log(result.getAll());      // everything at once
 } catch (error) {
     console.log(error.message)
 }
@@ -42,19 +46,74 @@ try {
     console.log('Births:', onToday.getBirths());
     console.log('Deaths:', onToday.getDeaths());
     console.log('Events:', onToday.getEvents());
+    console.log('Holidays:', onToday.getHolidays());
+    console.log('Editor Picks:', onToday.getSelected());
 } catch (error) {
     console.log(error.message)
 }
 ```
 
+## API Reference
+
+### `OnThisDay(month?, day?, options?)`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `month` | `number \| {month, day}` | today | 1–12 |
+| `day` | `number` | today | 1–31 (validated per month) |
+| `options.type` | `string` | `'all'` | `'all'`, `'events'`, `'births'`, `'deaths'`, `'holidays'`, `'selected'` |
+| `options.lang` | `string` | `'en'` | Supported language code |
+| `options.timeout` | `number` | `10000` | Request timeout in ms |
+
+### Return value
+
+```js
+{
+  getEvents:   () => [{ year: 1776, event: '...' }, ...],
+  getBirths:   () => [...],
+  getDeaths:   () => [...],
+  getHolidays: () => [...],
+  getSelected: () => [...],
+  getAll:      () => { events, births, deaths, holidays, selected },
+  getRaw:      () => { events, births, deaths, holidays, selected }, // full Wikimedia shape
+
+  // Direct access (normalized)
+  events:   [...],
+  births:   [...],
+  deaths:   [...],
+  holidays: [...],
+  selected: [...]
+}
+```
+
+All getters return **copies** — mutating them won't affect the result object.
+
+
+## Supported Languages
+
+| Code | Language |
+|------|----------|
+| `en` | English |
+| `es` | Spanish |
+| `de` | German |
+| `fr` | French |
+| `zh` | Chinese |
+| `ru` | Russian |
+| `ar` | Arabic |
+| `pt` | Portuguese |
+| `sv` | Swedish |
+| `tr` | Turkish |
+| `cs` | Czech |
+| `uk` | Ukrainian |
+
+Unsupported languages throw immediately - no wasted network calls.
+
 
 ## Contributing ![GitHub](https://img.shields.io/github/contributors/MarketingPipeline/OnThisDay.js)
 
-Want to improve this? Create a pull request with detailed changes / improvements! If approved you will be added to the list of contributors of this awesome project!
+Want to improve this? Create a pull request with detailed changes. If approved you will be added to the list of contributors.
 
-See also the list of
-[contributors](https://github.com/MarketingPipeline/OnThisDay.js/graphs/contributors) who
-participate in this project.
+See the list of [contributors](https://github.com/MarketingPipeline/OnThisDay.js/graphs/contributors) who participate in this project.
 
 ## License ![GitHub](https://img.shields.io/github/license/MarketingPipeline/OnThisDay.js)
 This library is open-source and available under the MIT License. See the [LICENSE](https://github.com/MarketingPipeline/OnThisDay.js/blob/main/LICENSE) file for more details.
