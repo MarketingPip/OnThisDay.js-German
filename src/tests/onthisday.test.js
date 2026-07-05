@@ -13,7 +13,7 @@ import {
   july4Events,
   missingFields,
   emptyResponse
-} from './tests/fixtures.js';
+} from './fixtures.js';
 
 // ── Mock Helpers ──────────────────────────────────────────────
 
