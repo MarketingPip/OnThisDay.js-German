@@ -1,12 +1,11 @@
 /**
- * OnThisDay.js v4.2.0
+ * OnThisDay.js v4.3.0
  * Zero-dependency, multi-language historical events.
- * Uses Wikimedia REST API (feed/onthisday).
+ * Uses Wikimedia REST API (feed/onthisday/all).
  * @license MIT
  */
 
 const API_BASE = 'https://api.wikimedia.org/feed/v1/wikipedia';
-const VALID_TYPES = ['all', 'events', 'births', 'deaths', 'holidays', 'selected'];
 const SUPPORTED_LANGS = ['en', 'es', 'de', 'fr', 'zh', 'ru', 'ar', 'pt', 'sv', 'tr', 'cs', 'uk'];
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
@@ -59,12 +58,7 @@ export function normalizeItem(item) {
   };
 }
 
-export function normalize(data, type) {
-  const base = { events: [], births: [], deaths: [], holidays: [], selected: [] };
-  if (type !== 'all') {
-    base[type] = (Array.isArray(data) ? data : []).map(normalizeItem);
-    return base;
-  }
+export function normalize(data) {
   const d = typeof data === 'object' && data !== null ? data : {};
   return {
     events:   (d.events   || []).map(normalizeItem),
@@ -75,12 +69,7 @@ export function normalize(data, type) {
   };
 }
 
-export function packageRaw(data, type) {
-  const base = { events: [], births: [], deaths: [], holidays: [], selected: [] };
-  if (type !== 'all') {
-    base[type] = Array.isArray(data) ? data : [];
-    return base;
-  }
+export function packageRaw(data) {
   const d = typeof data === 'object' && data !== null ? data : {};
   return {
     events:   d.events   || [],
@@ -96,7 +85,6 @@ export function packageRaw(data, type) {
  * @param {number} [month] - 1-12, or omit for today
  * @param {number} [day] - 1-31, or omit for today
  * @param {object} [options] - Options
- * @param {string} [options.type='all'] - Event type
  * @param {string} [options.lang='en'] - Language code
  * @param {number} [options.timeout=10000] - Request timeout in ms
  * @returns {Promise<object>}
@@ -114,15 +102,10 @@ export async function OnThisDay(month, day, options = {}) {
     ({ month: m, day: d } = validateDate(month, day));
   }
 
-  const type = options.type || 'all';
   const lang = validateLang(options.lang ?? 'en');
   const timeout = options.timeout ?? 10000;
 
-  if (!VALID_TYPES.includes(type)) {
-    throw new Error(`Invalid type "${type}". Valid: ${VALID_TYPES.join(', ')}`);
-  }
-
-  const url = `${API_BASE}/${encodeURIComponent(lang)}/onthisday/${encodeURIComponent(type)}/${m}/${d}`;
+  const url = `${API_BASE}/${encodeURIComponent(lang)}/onthisday/all/${m}/${d}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -133,7 +116,7 @@ export async function OnThisDay(month, day, options = {}) {
       signal: controller.signal,
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'OnThisDay.js/4.2.0 (https://github.com/MarketingPipeline/OnThisDay.js)'
+        'User-Agent': 'OnThisDay.js/4.3.0 (https://github.com/MarketingPipeline/OnThisDay.js)'
       }
     });
   } catch (err) {
@@ -159,8 +142,8 @@ export async function OnThisDay(month, day, options = {}) {
     throw new Error(`Invalid JSON response: ${err.message}`);
   }
 
-  const normalized = normalize(raw, type);
-  const rawStore = packageRaw(raw, type);
+  const normalized = normalize(raw);
+  const rawStore = packageRaw(raw);
 
   return {
     getEvents:   () => [...normalized.events],
