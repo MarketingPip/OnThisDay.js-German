@@ -64,11 +64,16 @@ try {
     console.log(error.message)
 }
 
-// Error Handling
+// Invalid date
 try {
-    const onToday = await OnThisDay()
-    await OnThisDay(2, 30);           // "Invalid date: 2/30. Month 2 only has 28 days."
-    await OnThisDay(7, 4, { lang: 'ja' }); // "Unsupported language: 'ja'. Supported: en, es, ..."
+    await OnThisDay(2, 30);
+} catch (error) {
+    console.log(error.message)
+}
+
+// Unsupported language
+try {
+    await OnThisDay(7, 4, { lang: 'ja' });
 } catch (error) {
     console.log(error.message)
 }
