@@ -35,6 +35,7 @@ try {
     console.log(result.getHolidays()); // holidays & observances
     console.log(result.getSelected()); // editor's picks
     console.log(result.getAll());      // everything at once
+    console.log(result.getRaw());      // full Wikimedia response
 } catch (error) {
     console.log(error.message)
 }
@@ -48,6 +49,7 @@ try {
     console.log('Events:', onToday.getEvents());
     console.log('Holidays:', onToday.getHolidays());
     console.log('Editor Picks:', onToday.getSelected());
+    console.log('Wikimedia:', onToday.getRaw());
 } catch (error) {
     console.log(error.message)
 }
@@ -58,6 +60,15 @@ try {
       lang: 'de',       // see supported languages below
       timeout: 5000     // milliseconds
     });
+} catch (error) {
+    console.log(error.message)
+}
+
+// Error Handling
+try {
+    const onToday = await OnThisDay()
+    await OnThisDay(2, 30);           // "Invalid date: 2/30. Month 2 only has 28 days."
+    await OnThisDay(7, 4, { lang: 'ja' }); // "Unsupported language: 'ja'. Supported: en, es, ..."
 } catch (error) {
     console.log(error.message)
 }
