@@ -5,9 +5,9 @@
  * LICENSED UNDER MIT LICENSE
  * MORE INFO CAN BE FOUND AT https://github.com/MarketingPipeline/OnThisDay.js/
  */
-
 const API_BASE = 'https://api.wikimedia.org/feed/v1/wikipedia';
 const VALID_TYPES = ['all', 'events', 'births', 'deaths', 'holidays', 'selected'];
+const SUPPORTED_LANGS = ['en', 'es', 'de', 'fr', 'zh', 'ru', 'ar', 'pt', 'sv', 'tr', 'cs', 'uk'];
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 export function isLeapYear(year) {
@@ -58,8 +58,8 @@ function resolveArgs(a, b, c) {
   }
 
   const lang = options.lang ?? 'en';
-  if (typeof lang !== 'string' || lang.length < 2) {
-    throw new Error(`Invalid language code: "${lang}". Must be a valid Wikipedia language code.`);
+  if (typeof lang !== 'string' || !SUPPORTED_LANGS.includes(lang)) {
+    throw new Error(`Unsupported language: "${lang}". Supported: ${SUPPORTED_LANGS.join(', ')}`);
   }
 
   return {
