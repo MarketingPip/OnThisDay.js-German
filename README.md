@@ -89,7 +89,7 @@ try {
 
 ## Contributing ![GitHub](https://img.shields.io/github/contributors/MarketingPipeline/OnThisDay.js)
 
-Want to improve this? Create a pull request with detailed changes. If approved you will be added to the list of contributors.
+Want to improve this? Create a pull request with detailed changes.
 
 See the list of [contributors](https://github.com/MarketingPipeline/OnThisDay.js/graphs/contributors) who participate in this project.
 
